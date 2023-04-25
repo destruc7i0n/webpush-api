@@ -98,10 +98,12 @@ func (s *Server) ScheduleNotification(notification push.Notification) {
 			Urgency: notification.Options.Urgency,
 		}
 
+		log.Printf("[INFO] Sending notification %s to %d subscriptions", notification.ID, len(subscriptions))
+
 		for _, subscription := range subscriptions {
 			status := s.push.Send(&subscription.Subscription, &notification.Payload, &options)
 			if status != push.PushStatusSuccess {
-				log.Printf("[ERROR] Failed to send notification: %v", status)
+				log.Printf("[ERROR] Failed to send notification. Status: %v", status)
 
 				if status == push.PushStatusHardFail {
 					// if fail, delete subscription

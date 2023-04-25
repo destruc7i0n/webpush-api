@@ -33,11 +33,15 @@ func (w *WebPush) Send(subscription *webpush.Subscription, payload *PushPayload,
 		return PushStatusHardFail
 	}
 
+	// combine options
+	if options == nil {
+		options = &webpush.Options{}
+	}
+	options.VAPIDPublicKey = w.VAPIDPublicKey
+	options.VAPIDPrivateKey = w.VAPIDPrivateKey
+
 	startedAt := time.Now()
-	resp, err := webpush.SendNotification(p, subscription, &webpush.Options{
-		VAPIDPublicKey:  w.VAPIDPublicKey,
-		VAPIDPrivateKey: w.VAPIDPrivateKey,
-	})
+	resp, err := webpush.SendNotification(p, subscription, options)
 
 	if err != nil {
 		log.Printf("[ERROR] Failed to push: %s", err)
