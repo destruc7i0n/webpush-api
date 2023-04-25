@@ -26,9 +26,10 @@ const (
 )
 
 type PushPayload struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-	Icon  string `json:"icon,omitempty"`
+	Title    string `json:"title"`
+	Body     string `json:"body"`
+	Icon     string `json:"icon,omitempty"`
+	Redirect string `json:"redirect,omitempty"`
 }
 
 type Subscription struct {

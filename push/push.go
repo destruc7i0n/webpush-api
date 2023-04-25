@@ -2,6 +2,7 @@ package push
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"time"
 
@@ -37,8 +38,11 @@ func (w *WebPush) Send(subscription *webpush.Subscription, payload *PushPayload,
 	if options == nil {
 		options = &webpush.Options{}
 	}
+	options.Subscriber = "mail@thedestruc7i0n.ca"
 	options.VAPIDPublicKey = w.VAPIDPublicKey
 	options.VAPIDPrivateKey = w.VAPIDPrivateKey
+
+	// log.Printf("[INFO] Sending push with options: %+v", options)
 
 	startedAt := time.Now()
 	resp, err := webpush.SendNotification(p, subscription, options)
@@ -52,23 +56,25 @@ func (w *WebPush) Send(subscription *webpush.Subscription, payload *PushPayload,
 	duration := time.Since(startedAt)
 	log.Printf("[INFO] Pushed (%d) in %s", resp.StatusCode, duration.String())
 
+	body, _ := io.ReadAll(resp.Body)
+
 	switch resp.StatusCode {
 	case 201:
 		log.Println("[INFO] Push accepted by push service")
 		return PushStatusSuccess
 	case 429:
-		log.Println("[INFO] Push rejected by push service (rate limit)")
+		log.Println("[INFO] Push rejected by push service (rate limit)", body)
 		return PushStatusTempFail
 	case 400, 404, 405, 413, 500, 501:
 		// Bad Request, Not Found, Method Not Allowed, Payload Too Large, Internal Server Error, Not Implemented
 		log.Println("[INFO] Push rejected by push service:", resp.StatusCode)
-		return PushStatusHardFail
 	case 410:
 		log.Println("[INFO] Subscription expired")
-		return PushStatusHardFail
 	default:
-		log.Println("[INFO] Unknown response from push service")
+		log.Printf("[INFO] Unknown response from push service: %d", resp.StatusCode)
 	}
+
+	log.Printf("[INFO] Push failed. Body: %s", body)
 
 	return PushStatusHardFail
 }

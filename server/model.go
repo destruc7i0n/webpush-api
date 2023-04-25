@@ -29,6 +29,9 @@ func (nr *notificationRequest) Bind(r *http.Request) error {
 	if nr.Urgency == "" {
 		nr.Urgency = webpush.UrgencyNormal
 	}
+	if nr.TTL == 0 {
+		nr.TTL = 30
+	}
 	return nil
 }
 
