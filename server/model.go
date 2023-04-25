@@ -97,15 +97,15 @@ func newNotificationResponse(id, message string) *notificationResponse {
 
 type topicResponse struct {
 	response
-	Topic []push.Subscription `json:"topic"`
+	Subscriptions []push.Subscription `json:"subscriptions"`
 }
 
-func newTopicResponse(topic []push.Subscription) *topicResponse {
+func newTopicResponse(subscriptions []push.Subscription) *topicResponse {
 	return &topicResponse{
 		response: response{
 			Status: ResponseTypeSuccess,
 		},
-		Topic: topic,
+		Subscriptions: subscriptions,
 	}
 }
 
