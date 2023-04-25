@@ -134,6 +134,9 @@ func (s *Server) deleteTopic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// remove all the scheduled jobs
+	s.scheduler.RemoveByTag(topicId)
+
 	render.JSON(w, r, newSuccessResponse("topic deleted"))
 }
 
