@@ -66,6 +66,8 @@ func (s *Server) loadAndScheduleNotifications() {
 		return
 	}
 
+	log.Printf("[INFO] Loaded %d notifications", len(notifications))
+
 	for _, notification := range notifications {
 		s.ScheduleNotification(notification)
 	}

@@ -61,7 +61,7 @@ func (s *Store) AddNotification(topic string, notification push.Notification) er
 }
 
 func (s *Store) GetNotifications() ([]push.Notification, error) {
-	notifications, err := s.AscendBy(IndexNotificationTopic)
+	notifications, err := s.AscendBy(GetNotificationKey("*", "*"))
 	if err != nil {
 		return nil, err
 	}

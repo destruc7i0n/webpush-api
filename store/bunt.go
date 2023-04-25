@@ -2,7 +2,6 @@ package store
 
 import (
 	"encoding/json"
-	"fmt"
 
 	buntdb "github.com/tidwall/buntdb"
 )
@@ -11,16 +10,9 @@ type Store struct {
 	db *buntdb.DB
 }
 
-const (
-	IndexSubscriptionTopic = "subscription_topic"
-	IndexNotificationTopic = "notification_topic"
-)
-
 func NewStore() (*Store, error) {
 	// db, err := buntdb.Open(":memory:")
 	db, err := buntdb.Open("store.db")
-	db.CreateIndex(IndexSubscriptionTopic, fmt.Sprintf("%s:*", KeySubscription), buntdb.IndexJSON(string(KeyTopic)))
-	db.CreateIndex(IndexNotificationTopic, fmt.Sprintf("%s:*", KeyNotification), buntdb.IndexJSON(string(KeyTopic)))
 
 	db.Shrink() // compact the database
 
