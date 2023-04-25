@@ -80,6 +80,21 @@ func newVapidKeyResponse(vapidKeys push.VapidKeys) *vapidKeyResponse {
 	}
 }
 
+type notificationResponse struct {
+	response
+	ID string `json:"id"`
+}
+
+func newNotificationResponse(id, message string) *notificationResponse {
+	return &notificationResponse{
+		response: response{
+			Status:  ResponseTypeSuccess,
+			Message: message,
+		},
+		ID: id,
+	}
+}
+
 type topicResponse struct {
 	response
 	Topic []push.Subscription `json:"topic"`

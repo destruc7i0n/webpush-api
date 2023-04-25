@@ -157,17 +157,19 @@ func (s *Server) sendNotification(w http.ResponseWriter, r *http.Request) {
 
 	instant := notificationTime.IsZero()
 
-	s.ScheduleNotification(push.Notification{
+	n := push.Notification{
 		Topic:   topicId,
 		ID:      uuid.New().String(),
 		Time:    notificationTime,
 		Payload: webPushPayload,
 		Options: reqData.NotificationOptions,
-	})
+	}
+
+	s.ScheduleNotification(n)
 
 	if instant {
-		render.JSON(w, r, newSuccessResponse("notification sent"))
+		render.JSON(w, r, newNotificationResponse(n.ID, "notification sent"))
 	} else {
-		render.JSON(w, r, newSuccessResponse("notification scheduled"))
+		render.JSON(w, r, newNotificationResponse(n.ID, "notification scheduled"))
 	}
 }

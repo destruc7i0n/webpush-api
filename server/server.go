@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SherClockHolmes/webpush-go"
 	"github.com/destruc7i0n/webpush-api/push"
 	"github.com/destruc7i0n/webpush-api/store"
+
+	webpush "github.com/SherClockHolmes/webpush-go"
 )
 
 type Server struct {
@@ -140,6 +141,8 @@ func (s *Server) Shutdown(ctx context.Context) (err error) {
 		log.Printf("[ERROR] Server shutdown error: %v", err)
 		return err
 	}
+
+	s.scheduler.Stop()
 
 	return
 }
