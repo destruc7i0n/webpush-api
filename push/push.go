@@ -26,7 +26,7 @@ func (w *WebPush) GetVapidKeys() VapidKeys {
 	return w.VapidKeys
 }
 
-func (w *WebPush) Send(subscription *webpush.Subscription, payload PushPayload, options webpush.Options) PushStatus {
+func (w *WebPush) Send(subscription *webpush.Subscription, payload *PushPayload, options *webpush.Options) PushStatus {
 	p, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("[ERROR] Failed to marshal payload: %s", err)

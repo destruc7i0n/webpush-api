@@ -99,7 +99,7 @@ func (s *Server) ScheduleNotification(notification push.Notification) {
 		}
 
 		for _, subscription := range subscriptions {
-			status := s.push.Send(&subscription.Subscription, notification.Payload, options)
+			status := s.push.Send(&subscription.Subscription, &notification.Payload, &options)
 			if status != push.PushStatusSuccess {
 				log.Printf("[ERROR] Failed to send notification: %v", status)
 
