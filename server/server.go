@@ -27,11 +27,12 @@ func NewServer(addr string, store *store.Store, push *push.WebPush) (s *Server) 
 		store:     store,
 		push:      push,
 		scheduler: scheduler,
+		shutdown:  false,
 	}
 
 	s.server = &http.Server{
 		Addr:    addr,
-		Handler: s.router(),
+		Handler: s.newRouter(),
 	}
 
 	s.loadAndScheduleNotifications()
@@ -40,18 +41,18 @@ func NewServer(addr string, store *store.Store, push *push.WebPush) (s *Server) 
 }
 
 func (s *Server) loadAndScheduleNotifications() {
-	notifications, err := s.store.GetAllNotifications()
+	notifications, err := s.store.GetNotifications()
 	if err != nil {
 		log.Printf("[ERROR] Failed to get notifications: %v", err)
 		return
 	}
 
 	for _, notification := range notifications {
-		s.ScheduleNotification(notification, false)
+		s.ScheduleNotification(notification)
 	}
 }
 
-func (s *Server) ScheduleNotification(notification push.Notification, instant bool) {
+func (s *Server) ScheduleNotification(notification push.Notification) {
 	s.store.SetStruct(store.GetNotificationKey(notification.ID), notification)
 
 	job := func() {
@@ -83,6 +84,8 @@ func (s *Server) ScheduleNotification(notification push.Notification, instant bo
 		// delete notification from store
 		s.store.Delete(store.GetNotificationKey(notification.ID))
 	}
+
+	instant := notification.Time.IsZero()
 
 	// check if in the past
 	if !instant && notification.Time.Before(time.Now()) {

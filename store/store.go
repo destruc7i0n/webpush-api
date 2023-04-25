@@ -39,7 +39,7 @@ func (s *Store) SetVapidKeys(vapidKeys push.VapidKeys) error {
 }
 
 func (s *Store) GetSubscriptions(topic string) ([]push.Subscription, error) {
-	subs, err := s.ListByPrefix(GetSubscriptionKey(topic, ""))
+	subs, err := s.AscendBy(GetSubscriptionKey(topic, "*"))
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +60,8 @@ func (s *Store) AddNotification(topic string, notification push.Notification) er
 	return s.SetStruct(GetNotificationKey(notification.ID), notification)
 }
 
-func (s *Store) GetAllNotifications() ([]push.Notification, error) {
-	notifications, err := s.ListByPrefix(GetNotificationKey(""))
+func (s *Store) GetNotifications() ([]push.Notification, error) {
+	notifications, err := s.AscendBy(IndexNotificationTopic)
 	if err != nil {
 		return nil, err
 	}

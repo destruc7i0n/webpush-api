@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Server) router() *chi.Mux {
+func (s *Server) newRouter() *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -34,20 +34,16 @@ func (s *Server) router() *chi.Mux {
 	}))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		render.JSON(w, r, map[string]string{"hello": "world"})
+		render.JSON(w, r, newSuccessResponse("hello world"))
 	})
 
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/status", s.status)
 		r.Get("/vapid", s.getVapidKey)
 
-		// r.Get("/topics", s.getTopics)
 		r.Route("/topic/{id:[a-z0-9_-]+}", func(r chi.Router) {
-			r.Use(s.topicCtx)
-
-			r.Get("/", s.getTopic)
-			// r.Delete("/", s.deleteTopic)
-			r.Post("/subscribe", s.subscribe)
+			r.With(s.topicCtx).Get("/", s.getTopic)
+			r.With(s.topicCtx).Post("/subscribe", s.subscribe)
 			r.Post("/push", s.sendNotification)
 		})
 	})
@@ -87,7 +83,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	notifications, err := s.store.GetAllNotifications()
+	notifications, err := s.store.GetNotifications()
 	if err != nil {
 		render.JSON(w, r, newErrorResponse(fmt.Sprintf("failed to get notifications: %v", err)))
 		return
@@ -135,7 +131,6 @@ func (s *Server) getTopic(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) sendNotification(w http.ResponseWriter, r *http.Request) {
 	topicId := chi.URLParam(r, "id")
-	subscriptions := r.Context().Value(store.KeyTopic).([]push.Subscription)
 
 	reqData := &notificationRequest{}
 	if err := render.Bind(r, reqData); err != nil {
@@ -149,10 +144,7 @@ func (s *Server) sendNotification(w http.ResponseWriter, r *http.Request) {
 		Icon:  reqData.Icon,
 	}
 
-	instant := true
-
-	// default time if not set
-	notificationTime := time.Now().UTC()
+	notificationTime := time.Time{} // zero time
 	if reqData.Scheduled != "" {
 		// parse utc time
 		nt, err := time.Parse(time.RFC3339, reqData.Scheduled)
@@ -161,8 +153,9 @@ func (s *Server) sendNotification(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		notificationTime = nt
-		instant = false
 	}
+
+	instant := notificationTime.IsZero()
 
 	s.ScheduleNotification(push.Notification{
 		Topic:   topicId,
@@ -170,7 +163,11 @@ func (s *Server) sendNotification(w http.ResponseWriter, r *http.Request) {
 		Time:    notificationTime,
 		Payload: webPushPayload,
 		Options: reqData.NotificationOptions,
-	}, instant)
+	})
 
-	render.JSON(w, r, newSuccessResponse(fmt.Sprintf("notification scheduled for %d subscribers", len(subscriptions))))
+	if instant {
+		render.JSON(w, r, newSuccessResponse("notification sent"))
+	} else {
+		render.JSON(w, r, newSuccessResponse("notification scheduled"))
+	}
 }

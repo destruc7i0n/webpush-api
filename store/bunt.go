@@ -11,11 +11,16 @@ type Store struct {
 	db *buntdb.DB
 }
 
+const (
+	IndexSubscriptionTopic = "subscription_topic"
+	IndexNotificationTopic = "notification_topic"
+)
+
 func NewStore() (*Store, error) {
 	// db, err := buntdb.Open(":memory:")
 	db, err := buntdb.Open("store.db")
-	db.CreateIndex("topic", fmt.Sprintf("%s:*", KeyTopic), buntdb.IndexString)
-	db.CreateIndex("notification", fmt.Sprintf("%s:*", KeyNotification), buntdb.IndexString)
+	db.CreateIndex(IndexSubscriptionTopic, fmt.Sprintf("%s:*", KeySubscription), buntdb.IndexJSON(string(KeyTopic)))
+	db.CreateIndex(IndexNotificationTopic, fmt.Sprintf("%s:*", KeyNotification), buntdb.IndexJSON(string(KeyTopic)))
 
 	db.Shrink() // compact the database
 
@@ -82,10 +87,10 @@ func (s *Store) GetStruct(key string, value interface{}) error {
 	return json.Unmarshal(val, value)
 }
 
-func (s *Store) ListByPrefix(prefix string) (map[string]string, error) {
+func (s *Store) AscendBy(prefix string) (map[string]string, error) {
 	list := make(map[string]string)
 	err := s.db.View(func(tx *buntdb.Tx) error {
-		err := tx.AscendKeys(prefix+"*", func(key, value string) bool {
+		err := tx.AscendKeys(prefix, func(key, value string) bool {
 			list[key] = value
 			return true
 		})
