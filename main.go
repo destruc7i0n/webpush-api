@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/destruc7i0n/webpush-api/push"
 	"github.com/destruc7i0n/webpush-api/server"
 	"github.com/destruc7i0n/webpush-api/store"
 )
@@ -19,27 +18,14 @@ func main() {
 
 	store, err := store.NewStore()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("[ERROR] Failed to initialize store: ", err)
 	}
-
-	// init vapid keys
-	vapidKeys, err := store.GetVapidKeys()
-	if err != nil {
-		vapidKeys = push.GenerateVAPIDKeys()
-		err = store.SetVapidKeys(vapidKeys)
-		if err != nil {
-			log.Fatal("[ERROR] Failed to set VAPID keys: ", err)
-		}
-		log.Printf("[INFO] Generated VAPID keys: %+v", vapidKeys)
-	}
-
-	push := push.NewWebPush(vapidKeys.VAPIDPublicKey, vapidKeys.VAPIDPrivateKey)
 
 	port := "8080"
 	if p := os.Getenv("PORT"); p != "" {
 		port = p
 	}
-	s := server.NewServer(":"+port, store, push)
+	s := server.NewServer(":"+port, store)
 
 	go func() {
 		log.Println("[INFO] Starting API server...")

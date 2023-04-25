@@ -19,7 +19,22 @@ type Server struct {
 	shutdown  bool
 }
 
-func NewServer(addr string, store *store.Store, push *push.WebPush) (s *Server) {
+func NewServer(addr string, store *store.Store) (s *Server) {
+	// init vapid keys
+	vapidKeys, err := store.GetVapidKeys()
+	if err != nil {
+		vapidKeys = push.GenerateVAPIDKeys()
+		err = store.SetVapidKeys(vapidKeys)
+		if err != nil {
+			log.Fatal("[ERROR] Failed to set VAPID keys: ", err)
+		}
+		log.Printf("[INFO] Generated VAPID keys: %+v", vapidKeys)
+	}
+
+	// init webpush
+	push := push.NewWebPush(vapidKeys.VAPIDPublicKey, vapidKeys.VAPIDPrivateKey)
+
+	// init scheduler
 	scheduler := startScheduler()
 
 	s = &Server{
