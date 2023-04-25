@@ -18,6 +18,7 @@ type Server struct {
 	push      *push.WebPush
 	scheduler *scheduler
 	shutdown  bool
+	notifs    chan *push.Notification
 }
 
 func NewServer(addr string, store *store.Store) (s *Server) {
@@ -33,7 +34,7 @@ func NewServer(addr string, store *store.Store) (s *Server) {
 	}
 
 	// init webpush
-	push := push.NewWebPush(vapidKeys.VAPIDPublicKey, vapidKeys.VAPIDPrivateKey)
+	wp := push.NewWebPush(vapidKeys.VAPIDPublicKey, vapidKeys.VAPIDPrivateKey)
 
 	// init scheduler
 	scheduler := startScheduler()
@@ -41,9 +42,10 @@ func NewServer(addr string, store *store.Store) (s *Server) {
 	s = &Server{
 		server:    nil,
 		store:     store,
-		push:      push,
+		push:      wp,
 		scheduler: scheduler,
 		shutdown:  false,
+		notifs:    make(chan *push.Notification, 256),
 	}
 
 	s.server = &http.Server{
@@ -52,6 +54,7 @@ func NewServer(addr string, store *store.Store) (s *Server) {
 	}
 
 	s.loadAndScheduleNotifications()
+	go s.startNotificationChannel()
 
 	return s
 }
@@ -68,8 +71,16 @@ func (s *Server) loadAndScheduleNotifications() {
 	}
 }
 
+func (s *Server) startNotificationChannel() {
+	for {
+		notification := <-s.notifs
+		s.ScheduleNotification(*notification)
+	}
+}
+
 func (s *Server) ScheduleNotification(notification push.Notification) {
-	s.store.SetStruct(store.GetNotificationKey(notification.ID), notification)
+	notificationKey := store.GetNotificationKey(notification.Topic, notification.ID)
+	s.store.SetStruct(notificationKey, notification)
 
 	job := func() {
 		subscriptions, err := s.store.GetSubscriptions(notification.Topic)
@@ -98,7 +109,7 @@ func (s *Server) ScheduleNotification(notification push.Notification) {
 		}
 
 		// delete notification from store
-		s.store.Delete(store.GetNotificationKey(notification.ID))
+		s.store.Delete(notificationKey)
 	}
 
 	instant := notification.Time.IsZero()

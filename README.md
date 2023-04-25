@@ -1,5 +1,7 @@
 # webpush-api
 
+A simple service for sending web push notifications to subscribers.
+
 ## API
 
 ### GET /api/vapid
@@ -18,6 +20,12 @@
 **Response**
 ```json
 { "status": "success", "subscriptions": [] }
+```
+
+### DELETE /api/topic/:topic
+**Response**
+```json
+{ "status": "success" }
 ```
 
 ### POST /api/topic/:topic/subscribe

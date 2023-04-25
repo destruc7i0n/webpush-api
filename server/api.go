@@ -44,6 +44,7 @@ func (s *Server) newRouter() *chi.Mux {
 		r.Route("/topic/{id:[a-z0-9_-]+}", func(r chi.Router) {
 			r.With(s.topicCtx).Get("/", s.getTopic)
 			r.With(s.topicCtx).Post("/subscribe", s.subscribe)
+			r.Delete("/", s.deleteTopic)
 			r.Post("/push", s.sendNotification)
 		})
 	})
@@ -125,9 +126,16 @@ func (s *Server) getTopic(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, newTopicResponse(topic))
 }
 
-// func (s *Server) deleteTopic(w http.ResponseWriter, r *http.Request) {
-// 	w.Write([]byte("Hello, World!"))
-// }
+func (s *Server) deleteTopic(w http.ResponseWriter, r *http.Request) {
+	topicId := chi.URLParam(r, "id")
+
+	if err := s.store.DeleteTopic(topicId); err != nil {
+		render.JSON(w, r, newErrorResponse(fmt.Sprintf("failed to delete topic: %v", err)))
+		return
+	}
+
+	render.JSON(w, r, newSuccessResponse("topic deleted"))
+}
 
 func (s *Server) sendNotification(w http.ResponseWriter, r *http.Request) {
 	topicId := chi.URLParam(r, "id")
@@ -165,7 +173,7 @@ func (s *Server) sendNotification(w http.ResponseWriter, r *http.Request) {
 		Options: reqData.NotificationOptions,
 	}
 
-	s.ScheduleNotification(n)
+	s.notifs <- &n
 
 	if instant {
 		render.JSON(w, r, newNotificationResponse(n.ID, "notification sent"))

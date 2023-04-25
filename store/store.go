@@ -24,8 +24,8 @@ func GetSubscriptionKey(topic, id string) string {
 	return fmt.Sprintf("%s:%s:%s", GetTopicKey(topic), KeySubscription, id)
 }
 
-func GetNotificationKey(id string) string {
-	return fmt.Sprintf("%s:%s", KeyNotification, id)
+func GetNotificationKey(topic, id string) string {
+	return fmt.Sprintf("%s:%s:%s", KeyNotification, topic, id)
 }
 
 func (s *Store) GetVapidKeys() (push.VapidKeys, error) {
@@ -57,7 +57,7 @@ func (s *Store) GetSubscriptions(topic string) ([]push.Subscription, error) {
 }
 
 func (s *Store) AddNotification(topic string, notification push.Notification) error {
-	return s.SetStruct(GetNotificationKey(notification.ID), notification)
+	return s.SetStruct(GetNotificationKey(topic, notification.ID), notification)
 }
 
 func (s *Store) GetNotifications() ([]push.Notification, error) {
@@ -76,4 +76,32 @@ func (s *Store) GetNotifications() ([]push.Notification, error) {
 	}
 
 	return resp, nil
+}
+
+func (s *Store) DeleteTopic(topic string) error {
+	// delete all subscriptions
+	subs, err := s.AscendBy(GetSubscriptionKey(topic, "*"))
+	if err != nil {
+		return err
+	}
+
+	for id := range subs {
+		if err := s.Delete(id); err != nil {
+			return err
+		}
+	}
+
+	// delete all notifications
+	notifications, err := s.AscendBy(GetNotificationKey(topic, "*"))
+	if err != nil {
+		return err
+	}
+
+	for id := range notifications {
+		if err := s.Delete(id); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
