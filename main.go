@@ -17,10 +17,6 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	// current utc time as rfc3339
-	now := time.Now().UTC().Format(time.RFC3339)
-	log.Printf("[INFO] Starting webpush-api at %s", now)
-
 	store, err := store.NewStore()
 	if err != nil {
 		log.Fatal(err)
@@ -39,7 +35,11 @@ func main() {
 
 	push := push.NewWebPush(vapidKeys.VAPIDPublicKey, vapidKeys.VAPIDPrivateKey)
 
-	s := server.NewServer(":8080", store, push)
+	port := "8080"
+	if p := os.Getenv("PORT"); p != "" {
+		port = p
+	}
+	s := server.NewServer(":"+port, store, push)
 
 	go func() {
 		log.Println("[INFO] Starting API server...")
